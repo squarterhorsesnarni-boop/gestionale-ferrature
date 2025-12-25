@@ -69,17 +69,35 @@ function eliminaCavallo(index) {
 function render() {
     const containerMobile = document.getElementById("lista-cavalli");
     const containerDesktop = document.querySelector("#tabella-cavalli tbody");
+    const searchTerm = document.getElementById("search") ? document.getElementById("search").value.toLowerCase() : "";
+    
     containerMobile.innerHTML = "";
     containerDesktop.innerHTML = "";
 
     const oggi = new Date();
     oggi.setHours(0,0,0,0);
 
-    listaCavalli.forEach((c, i) => {
+    // 1. CREIAMO UNA COPIA PER NON ROVINARE L'ORIGINALE E CALCOLIAMO LE DATE
+    let cavalliVisualizzati = listaCavalli.map((c, index) => {
         const ultima = new Date(c.ultima);
         const prossima = new Date(ultima);
         prossima.setDate(prossima.getDate() + c.intervallo);
-        const diff = Math.ceil((prossima - oggi) / 86400000);
+        return { ...c, prossima, originaleIndex: index }; // Teniamo l'indice originale per le funzioni elimina/aggiorna
+    });
+
+    // 2. FILTRIAMO IN BASE ALLA RICERCA
+    if (searchTerm) {
+        cavalliVisualizzati = cavalliVisualizzati.filter(c => 
+            c.nome.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // 3. ORDINIAMO PER DATA (Il più vecchio/urgente per primo)
+    cavalliVisualizzati.sort((a, b) => a.prossima - b.prossima);
+
+    // 4. DISEGNIAMO I RISULTATI
+    cavalliVisualizzati.forEach((c) => {
+        const diff = Math.ceil((c.prossima - oggi) / 86400000);
 
         let stato = "BUONO", classe = "buono", bg = "bg-buono";
         if (diff < 0) { stato = "SCADUTO"; classe = "scaduto"; bg = "bg-scaduto"; }
@@ -89,12 +107,12 @@ function render() {
         const card = document.createElement("div");
         card.className = `card ${classe}`;
         card.innerHTML = `
-            <div class="nome">${c.nome} <span onclick="eliminaCavallo(${i})">🗑️</span></div>
-            <div style="font-size:14px">Ultima: ${c.ultima} | Prossima: ${prossima.toISOString().split('T')[0]}</div>
+            <div class="nome">${c.nome} <span onclick="eliminaCavallo(${c.originaleIndex})" style="cursor:pointer">🗑️</span></div>
+            <div style="font-size:14px">Ultima: ${c.ultima} | Prossima: ${c.prossima.toISOString().split('T')[0]}</div>
             <div style="margin: 10px 0"><strong>Mancano: ${diff} giorni</strong></div>
             <div style="display:flex; gap:10px;">
                 <span class="stato ${bg}">${stato}</span>
-                <button onclick="aggiornaFerratura(${i})" style="flex:1; background:#3498db; color:white; border:none; border-radius:5px; padding:5px; font-weight:bold;">🔨 FERRATO OGGI</button>
+                <button onclick="aggiornaFerratura(${c.originaleIndex})" style="flex:1; background:#3498db; color:white; border:none; border-radius:5px; padding:5px; font-weight:bold; cursor:pointer;">🔨 FERRATO OGGI</button>
             </div>`;
         containerMobile.appendChild(card);
 
@@ -104,12 +122,12 @@ function render() {
             <td><strong>${c.nome}</strong></td>
             <td>${c.ultima}</td>
             <td>${c.intervallo} gg</td>
-            <td>${prossima.toISOString().split('T')[0]}</td>
+            <td>${c.prossima.toISOString().split('T')[0]}</td>
             <td>${diff}</td>
             <td><span class="stato ${bg}">${stato}</span></td>
             <td>
-                <button onclick="aggiornaFerratura(${i})" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">🔨 Oggi</button>
-                <button onclick="eliminaCavallo(${i})" style="background:#eee; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">🗑️</button>
+                <button onclick="aggiornaFerratura(${c.originaleIndex})" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">🔨 Oggi</button>
+                <button onclick="eliminaCavallo(${c.originaleIndex})" style="background:#eee; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">🗑️</button>
             </td>`;
         containerDesktop.appendChild(row);
     });
