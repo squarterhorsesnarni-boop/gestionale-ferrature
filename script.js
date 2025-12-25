@@ -1,165 +1,122 @@
-/* --- CONFIGURAZIONE DATABASE (JSONBin.io) --- */
+// --- CONFIGURAZIONE ---
 const BIN_ID = "694d0f31d0ea881f403f5171"; 
 const API_KEY = "$2a$10$rnrc3gm93AxacslbWtqGWeXkwnGZUTHMuxP05ijc7f5gA1p5pQOja"; 
-
-// URL base per le chiamate
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// Variabile globale per tenere i dati in memoria mentre l'utente lavora
 let listaCavalli = [];
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("form-cavallo").addEventListener("submit", salvaCavallo);
+    caricaDati();
+});
 
-function init() {
-  document.getElementById("form-cavallo").addEventListener("submit", salvaCavallo);
-  caricaDati(); // Avvia il download dei dati dal cloud
-}
-
-/* 1. SCARICA I DATI DAL CLOUD */
 function caricaDati() {
-  mostraCaricamento(true);
-  
-  fetch(API_URL + "/latest", {
-    method: "GET",
-    headers: {
-      "X-Master-Key": API_KEY
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    // JSONBin restituisce i dati dentro un oggetto "record"
-    listaCavalli = data.record || [];
-    render();
-    mostraCaricamento(false);
-  })
-  .catch(err => {
-    console.error("Errore download:", err);
-    alert("Errore nel caricamento dei dati! Controlla la connessione.");
-    mostraCaricamento(false);
-  });
+    toggleLoading(true);
+    fetch(`${API_URL}/latest`, { headers: { "X-Master-Key": API_KEY } })
+        .then(r => r.json())
+        .then(data => {
+            listaCavalli = data.record || [];
+            render();
+        })
+        .finally(() => toggleLoading(false));
 }
 
-/* 2. SALVA I DATI NEL CLOUD (Sovrascrive il file) */
-function aggiornaCloud() {
-  mostraCaricamento(true);
-
-  fetch(API_URL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": API_KEY
-    },
-    body: JSON.stringify(listaCavalli)
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log("Salvataggio riuscito");
-    mostraCaricamento(false);
-    render(); // Ridisegna per sicurezza
-  })
-  .catch(err => {
-    console.error("Errore salvataggio:", err);
-    alert("Impossibile salvare! Riprova.");
-    mostraCaricamento(false);
-  });
+function salvaCloud() {
+    toggleLoading(true);
+    fetch(API_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+        body: JSON.stringify(listaCavalli)
+    })
+    .then(() => render())
+    .finally(() => toggleLoading(false));
 }
 
-/* 3. AGGIUNGI CAVALLO */
 function salvaCavallo(e) {
-  e.preventDefault();
+    e.preventDefault();
+    const nome = document.getElementById("nome").value.trim();
+    const ultima = document.getElementById("ultima").value;
+    const intervallo = parseInt(document.getElementById("intervallo").value);
 
-  const nome = document.getElementById("nome").value.trim();
-  const ultima = document.getElementById("ultima").value;
-  const intervallo = parseInt(document.getElementById("intervallo").value);
+    const indexEsistente = listaCavalli.findIndex(c => c.nome.toLowerCase() === nome.toLowerCase());
 
-  if (!nome || !ultima || !intervallo) return;
-
-  // Aggiungiamo alla lista locale e poi inviamo tutto al cloud
-  listaCavalli.push({ nome, ultima, intervallo });
-  
-  aggiornaCloud(); // Salva online
-  e.target.reset();
-}
-
-/* 4. RIMUOVI CAVALLO */
-function eliminaCavallo(index) {
-  if(confirm("Sei sicuro di voler rimuovere questo cavallo?")) {
-    listaCavalli.splice(index, 1);
-    aggiornaCloud(); // Salva online le modifiche
-  }
-}
-
-/* 5. DISEGNA L'INTERFACCIA */
-function render() {
-  const containerMobile = document.getElementById("lista-cavalli");
-  const containerDesktop = document.querySelector("#tabella-cavalli tbody");
-  
-  containerMobile.innerHTML = "";
-  containerDesktop.innerHTML = "";
-
-  const oggi = new Date();
-  oggi.setHours(0,0,0,0); // Ignoriamo l'ora per calcoli precisi
-
-  listaCavalli.forEach((c, i) => {
-    const ultima = new Date(c.ultima);
-    const prossima = new Date(ultima);
-    prossima.setDate(prossima.getDate() + c.intervallo);
-    
-    // Differenza in giorni
-    const diff = Math.ceil((prossima - oggi) / (1000 * 60 * 60 * 24));
-
-    let statoTesto = "BUONO";
-    let classeColore = "bg-buono"; // Nota: classi aggiornate per corrispondere al CSS
-    
-    if (diff < 0) { 
-        statoTesto = "SCADUTO"; 
-        classeColore = "bg-scaduto"; 
-    } else if (diff <= 7) { 
-        statoTesto = "IN SCADENZA"; 
-        classeColore = "bg-inscadenza"; 
-    }
-
-    // --- Versione Mobile ---
-    const card = document.createElement("div");
-    card.className = `card ${classeColore.replace('bg-', '')}`; // Aggiunge bordo colorato
-    card.innerHTML = `
-      <div class="nome">
-        ${c.nome} 
-        <button onclick="eliminaCavallo(${i})" style="background:none; border:none; font-size:18px;">❌</button>
-      </div>
-      <div class="dati">📅 Ultima: ${c.ultima}</div>
-      <div class="dati">🔮 Prossima: ${prossima.toISOString().split("T")[0]}</div>
-      <div class="dati">⏳ Mancano: <strong>${diff} gg</strong></div>
-      <div style="margin-top:10px;">
-        <span class="stato ${classeColore}">${statoTesto}</span>
-      </div>
-    `;
-    containerMobile.appendChild(card);
-
-    // --- Versione Desktop ---
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><strong>${c.nome}</strong></td>
-      <td>${c.ultima}</td>
-      <td>${c.intervallo} gg</td>
-      <td>${prossima.toISOString().split("T")[0]}</td>
-      <td><strong>${diff}</strong></td>
-      <td><span class="stato ${classeColore}">${statoTesto}</span></td>
-      <td><button onclick="eliminaCavallo(${i})">Elimina</button></td>
-    `;
-    containerDesktop.appendChild(row);
-  });
-}
-
-function mostraCaricamento(isLoading) {
-    const btn = document.querySelector("form button");
-    if(isLoading) {
-        btn.textContent = "⏳ Attendi...";
-        btn.disabled = true;
-        document.body.style.cursor = "wait";
+    if (indexEsistente !== -1) {
+        if (!confirm(`Il cavallo "${nome}" esiste già. Sovrascrivere i dati?`)) return;
+        listaCavalli[indexEsistente] = { nome, ultima, intervallo };
     } else {
-        btn.textContent = "Salva";
-        btn.disabled = false;
-        document.body.style.cursor = "default";
+        listaCavalli.push({ nome, ultima, intervallo });
     }
+    
+    salvaCloud();
+    e.target.reset();
+}
+
+function aggiornaFerratura(index) {
+    const oggi = new Date().toISOString().split('T')[0];
+    if (confirm(`Confermi ferratura per ${listaCavalli[index].nome} in data oggi?`)) {
+        listaCavalli[index].ultima = oggi;
+        salvaCloud();
+    }
+}
+
+function eliminaCavallo(index) {
+    if (confirm("Eliminare definitivamente questo cavallo?")) {
+        listaCavalli.splice(index, 1);
+        salvaCloud();
+    }
+}
+
+function render() {
+    const containerMobile = document.getElementById("lista-cavalli");
+    const containerDesktop = document.querySelector("#tabella-cavalli tbody");
+    containerMobile.innerHTML = "";
+    containerDesktop.innerHTML = "";
+
+    const oggi = new Date();
+    oggi.setHours(0,0,0,0);
+
+    listaCavalli.forEach((c, i) => {
+        const ultima = new Date(c.ultima);
+        const prossima = new Date(ultima);
+        prossima.setDate(prossima.getDate() + c.intervallo);
+        const diff = Math.ceil((prossima - oggi) / 86400000);
+
+        let stato = "BUONO", classe = "buono", bg = "bg-buono";
+        if (diff < 0) { stato = "SCADUTO"; classe = "scaduto"; bg = "bg-scaduto"; }
+        else if (diff <= 7) { stato = "IN SCADENZA"; classe = "inscadenza"; bg = "bg-inscadenza"; }
+
+        // Render Mobile
+        const card = document.createElement("div");
+        card.className = `card ${classe}`;
+        card.innerHTML = `
+            <div class="nome">${c.nome} <span onclick="eliminaCavallo(${i})">🗑️</span></div>
+            <div style="font-size:14px">Ultima: ${c.ultima} | Prossima: ${prossima.toISOString().split('T')[0]}</div>
+            <div style="margin: 10px 0"><strong>Mancano: ${diff} giorni</strong></div>
+            <div style="display:flex; gap:10px;">
+                <span class="stato ${bg}">${stato}</span>
+                <button onclick="aggiornaFerratura(${i})" style="flex:1; background:#3498db; color:white; border:none; border-radius:5px; padding:5px; font-weight:bold;">🔨 FERRATO OGGI</button>
+            </div>`;
+        containerMobile.appendChild(card);
+
+        // Render Desktop
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${c.nome}</strong></td>
+            <td>${c.ultima}</td>
+            <td>${c.intervallo} gg</td>
+            <td>${prossima.toISOString().split('T')[0]}</td>
+            <td>${diff}</td>
+            <td><span class="stato ${bg}">${stato}</span></td>
+            <td>
+                <button onclick="aggiornaFerratura(${i})" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">🔨 Oggi</button>
+                <button onclick="eliminaCavallo(${i})" style="background:#eee; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">🗑️</button>
+            </td>`;
+        containerDesktop.appendChild(row);
+    });
+}
+
+function toggleLoading(isLoading) {
+    const btn = document.getElementById("btn-salva");
+    btn.disabled = isLoading;
+    btn.textContent = isLoading ? "Attendere..." : "Salva";
 }
