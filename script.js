@@ -69,65 +69,99 @@ function eliminaCavallo(index) {
 function render() {
     const containerMobile = document.getElementById("lista-cavalli");
     const containerDesktop = document.querySelector("#tabella-cavalli tbody");
-    const searchTerm = document.getElementById("search") ? document.getElementById("search").value.toLowerCase() : "";
     
+    // 1. Controllo di sicurezza: se la lista non è ancora caricata, esci
+    if (!listaCavalli) return; 
+
+    // 2. Recupero del termine di ricerca
+    const searchInput = document.getElementById("search");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+    
+    // Pulizia dei contenitori
     containerMobile.innerHTML = "";
     containerDesktop.innerHTML = "";
 
     const oggi = new Date();
     oggi.setHours(0,0,0,0);
 
-    // 1. CREIAMO UNA COPIA PER NON ROVINARE L'ORIGINALE E CALCOLIAMO LE DATE
+    // 3. Preparazione dei dati: calcolo date e mantenimento indice originale
     let cavalliVisualizzati = listaCavalli.map((c, index) => {
         const ultima = new Date(c.ultima);
         const prossima = new Date(ultima);
         prossima.setDate(prossima.getDate() + c.intervallo);
-        return { ...c, prossima, originaleIndex: index }; // Teniamo l'indice originale per le funzioni elimina/aggiorna
+        return { 
+            ...c, 
+            prossima, 
+            originaleIndex: index 
+        };
     });
 
-    // 2. FILTRIAMO IN BASE ALLA RICERCA
+    // 4. Filtro per nome
     if (searchTerm) {
         cavalliVisualizzati = cavalliVisualizzati.filter(c => 
             c.nome.toLowerCase().includes(searchTerm)
         );
     }
 
-    // 3. ORDINIAMO PER DATA (Il più vecchio/urgente per primo)
+    // 5. Ordinamento: i più urgenti (data più vecchia o vicina) in alto
     cavalliVisualizzati.sort((a, b) => a.prossima - b.prossima);
 
-    // 4. DISEGNIAMO I RISULTATI
+    // 6. Ciclo di disegno
     cavalliVisualizzati.forEach((c) => {
         const diff = Math.ceil((c.prossima - oggi) / 86400000);
 
         let stato = "BUONO", classe = "buono", bg = "bg-buono";
-        if (diff < 0) { stato = "SCADUTO"; classe = "scaduto"; bg = "bg-scaduto"; }
-        else if (diff <= 7) { stato = "IN SCADENZA"; classe = "inscadenza"; bg = "bg-inscadenza"; }
+        if (diff < 0) { 
+            stato = "SCADUTO"; 
+            classe = "scaduto"; 
+            bg = "bg-scaduto"; 
+        } else if (diff <= 7) { 
+            stato = "IN SCADENZA"; 
+            classe = "inscadenza"; 
+            bg = "bg-inscadenza"; 
+        }
 
-        // Render Mobile
+        // Render Mobile (Card)
         const card = document.createElement("div");
         card.className = `card ${classe}`;
         card.innerHTML = `
-            <div class="nome">${c.nome} <span onclick="eliminaCavallo(${c.originaleIndex})" style="cursor:pointer">🗑️</span></div>
-            <div style="font-size:14px">Ultima: ${c.ultima} | Prossima: ${c.prossima.toISOString().split('T')[0]}</div>
-            <div style="margin: 10px 0"><strong>Mancano: ${diff} giorni</strong></div>
-            <div style="display:flex; gap:10px;">
+            <div class="nome">
+                ${c.nome} 
+                <span onclick="eliminaCavallo(${c.originaleIndex})" style="cursor:pointer; font-size: 16px;">🗑️</span>
+            </div>
+            <div style="font-size:14px; color: #666;">
+                Ultima: ${c.ultima} | Prossima: ${c.prossima.toISOString().split('T')[0]}
+            </div>
+            <div style="margin: 12px 0; font-size: 16px;">
+                <strong>Mancano: ${diff} giorni</strong>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
                 <span class="stato ${bg}">${stato}</span>
-                <button onclick="aggiornaFerratura(${c.originaleIndex})" style="flex:1; background:#3498db; color:white; border:none; border-radius:5px; padding:5px; font-weight:bold; cursor:pointer;">🔨 FERRATO OGGI</button>
+                <button onclick="aggiornaFerratura(${c.originaleIndex})" 
+                        style="flex:1; background:#3498db; color:white; border:none; border-radius:6px; padding:10px; font-weight:bold; cursor:pointer;">
+                        🔨 FERRATO OGGI
+                </button>
             </div>`;
         containerMobile.appendChild(card);
 
-        // Render Desktop
+        // Render Desktop (Tabella)
         const row = document.createElement("tr");
         row.innerHTML = `
             <td><strong>${c.nome}</strong></td>
             <td>${c.ultima}</td>
             <td>${c.intervallo} gg</td>
             <td>${c.prossima.toISOString().split('T')[0]}</td>
-            <td>${diff}</td>
+            <td><strong>${diff}</strong></td>
             <td><span class="stato ${bg}">${stato}</span></td>
             <td>
-                <button onclick="aggiornaFerratura(${c.originaleIndex})" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">🔨 Oggi</button>
-                <button onclick="eliminaCavallo(${c.originaleIndex})" style="background:#eee; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">🗑️</button>
+                <button onclick="aggiornaFerratura(${c.originaleIndex})" 
+                        style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        🔨 Oggi
+                </button>
+                <button onclick="eliminaCavallo(${c.originaleIndex})" 
+                        style="background:#f1f2f6; color:#e74c3c; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-left:5px;">
+                        🗑️
+                </button>
             </td>`;
         containerDesktop.appendChild(row);
     });
