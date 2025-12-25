@@ -120,3 +120,8 @@ function toggleLoading(isLoading) {
     btn.disabled = isLoading;
     btn.textContent = isLoading ? "Attendere..." : "Salva";
 }
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log("PWA: Service Worker Registrato"));
+}
