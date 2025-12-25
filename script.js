@@ -70,21 +70,24 @@ function render() {
     const containerMobile = document.getElementById("lista-cavalli");
     const containerDesktop = document.querySelector("#tabella-cavalli tbody");
     
-    // 1. Controllo di sicurezza: se la lista non è ancora caricata, esci
     if (!listaCavalli) return; 
 
-    // 2. Recupero del termine di ricerca
     const searchInput = document.getElementById("search");
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
     
-    // Pulizia dei contenitori
     containerMobile.innerHTML = "";
     containerDesktop.innerHTML = "";
 
     const oggi = new Date();
     oggi.setHours(0,0,0,0);
 
-    // 3. Preparazione dei dati: calcolo date e mantenimento indice originale
+    // Funzione rapida per convertire AAAA-MM-GG in GG/MM/AAAA
+    const formattaDataIT = (dataISO) => {
+        if (!dataISO) return "-";
+        const [anno, mese, giorno] = dataISO.split('-');
+        return `${giorno}/${mese}/${anno}`;
+    };
+
     let cavalliVisualizzati = listaCavalli.map((c, index) => {
         const ultima = new Date(c.ultima);
         const prossima = new Date(ultima);
@@ -96,32 +99,26 @@ function render() {
         };
     });
 
-    // 4. Filtro per nome
     if (searchTerm) {
         cavalliVisualizzati = cavalliVisualizzati.filter(c => 
             c.nome.toLowerCase().includes(searchTerm)
         );
     }
 
-    // 5. Ordinamento: i più urgenti (data più vecchia o vicina) in alto
     cavalliVisualizzati.sort((a, b) => a.prossima - b.prossima);
 
-    // 6. Ciclo di disegno
     cavalliVisualizzati.forEach((c) => {
         const diff = Math.ceil((c.prossima - oggi) / 86400000);
+        
+        // Prepariamo le date formattate per la visualizzazione
+        const ultimaFormattata = formattaDataIT(c.ultima);
+        const prossimaFormattata = formattaDataIT(c.prossima.toISOString().split('T')[0]);
 
         let stato = "BUONO", classe = "buono", bg = "bg-buono";
-        if (diff < 0) { 
-            stato = "SCADUTO"; 
-            classe = "scaduto"; 
-            bg = "bg-scaduto"; 
-        } else if (diff <= 7) { 
-            stato = "IN SCADENZA"; 
-            classe = "inscadenza"; 
-            bg = "bg-inscadenza"; 
-        }
+        if (diff < 0) { stato = "SCADUTO"; classe = "scaduto"; bg = "bg-scaduto"; }
+        else if (diff <= 7) { stato = "IN SCADENZA"; classe = "inscadenza"; bg = "bg-inscadenza"; }
 
-        // Render Mobile (Card)
+        // Render Mobile
         const card = document.createElement("div");
         card.className = `card ${classe}`;
         card.innerHTML = `
@@ -130,7 +127,7 @@ function render() {
                 <span onclick="eliminaCavallo(${c.originaleIndex})" style="cursor:pointer; font-size: 16px;">🗑️</span>
             </div>
             <div style="font-size:14px; color: #666;">
-                Ultima: ${c.ultima} | Prossima: ${c.prossima.toISOString().split('T')[0]}
+                Ultima: ${ultimaFormattata} | Prossima: ${prossimaFormattata}
             </div>
             <div style="margin: 12px 0; font-size: 16px;">
                 <strong>Mancano: ${diff} giorni</strong>
@@ -144,13 +141,13 @@ function render() {
             </div>`;
         containerMobile.appendChild(card);
 
-        // Render Desktop (Tabella)
+        // Render Desktop
         const row = document.createElement("tr");
         row.innerHTML = `
             <td><strong>${c.nome}</strong></td>
-            <td>${c.ultima}</td>
+            <td>${ultimaFormattata}</td>
             <td>${c.intervallo} gg</td>
-            <td>${c.prossima.toISOString().split('T')[0]}</td>
+            <td>${prossimaFormattata}</td>
             <td><strong>${diff}</strong></td>
             <td><span class="stato ${bg}">${stato}</span></td>
             <td>
