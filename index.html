@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestione Ferrature</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>📋 Ferrature Scuderia</h1>
+
+  <h2>➕ Gestione cavalli</h2>
+
+  <form id="form-cavallo">
+    <div class="form-group">
+      <label for="nome">Nome Cavallo</label>
+      <input type="text" id="nome" placeholder="Es. Varenne" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="ultima">Data Ultima Ferratura</label>
+      <input type="date" id="ultima" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="intervallo">Intervallo (giorni)</label>
+      <input type="number" id="intervallo" value="40" required>
+    </div>
+
+    <button type="submit">Salva</button>
+  </form>
+
+  <hr style="border: 0; border-top: 1px solid #ddd; margin: 30px 0;">
+
+  <div id="lista-cavalli" class="mobile">
+    </div>
+
+  <table id="tabella-cavalli" class="desktop">
+    <thead>
+      <tr>
+        <th>Cavallo</th>
+        <th>Ultima ferratura</th>
+        <th>Intervallo</th>
+        <th>Prossima ferratura</th>
+        <th>Giorni mancanti</th>
+        <th>Stato</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      </tbody>
+  </table>
+
+  <script src="script.js"></script>
+
+</body>
+</html>

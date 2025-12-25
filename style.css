@@ -1,0 +1,164 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #2c3e50;
+}
+
+/* ---------- FORM ---------- */
+form {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  max-width: 800px;
+  margin: 0 auto 30px auto;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 12px;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #666;
+}
+
+form input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+form button {
+  padding: 10px 20px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+  height: 42px; /* Allinea con gli input */
+}
+
+form button:hover {
+  background: #1a252f;
+}
+
+form button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* ---------- CARD (MOBILE) ---------- */
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border-left: 5px solid transparent;
+}
+
+.card.scaduto { border-left-color: #d32f2f; }
+.card.inscadenza { border-left-color: #f57c00; }
+.card.buono { border-left-color: #388e3c; }
+
+.nome {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dati {
+  margin-top: 5px;
+  font-size: 15px;
+  color: #555;
+}
+
+/* ---------- STATI ---------- */
+.stato {
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.bg-scaduto { background: #d32f2f; }
+.bg-inscadenza { background: #f57c00; }
+.bg-buono { background: #388e3c; }
+
+/* ---------- TABELLA DESKTOP ---------- */
+table {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+th, td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+th {
+  background: #2c3e50;
+  color: white;
+  font-weight: 600;
+}
+
+td button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+td button:hover { background: #c0392b; }
+
+/* ---------- RESPONSIVE ---------- */
+.mobile { display: none; }
+.desktop { display: table; }
+
+@media (max-width: 768px) {
+  .mobile { display: block; }
+  .desktop { display: none; }
+  
+  form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .form-group { width: 100%; }
+  
+  form input, form button {
+    width: 100%;
+  }
+}
