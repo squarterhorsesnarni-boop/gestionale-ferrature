@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="login-screen" class="screen" style="display:none;">
+    <div class="login-card">
+        <img src="icon.png" width="100">
+        <h2>Accesso Scuderia</h2>
+        <input type="password" id="app-password" placeholder="Inserisci Password">
+        <button onclick="checkPassword()">Entra</button>
+    </div>
+</div>
+
+<nav id="main-nav" style="display:none;">
+    <button onclick="showSection('home')">🏠 Home</button>
+    <button onclick="showSection('ferrature')">🔨 Ferrature</button>
+    <button onclick="showSection('lezioni')">🐎 Lezioni</button>
+</nav>
+
+<div id="section-home" class="screen section" style="display:none;">
+    <div class="home-hero">
+        <img src="icon.png" alt="Logo Scuderia" class="logo-home">
+        <h1>Benvenuti in Scuderia</h1>
+        <div class="menu-grid">
+            <button class="menu-btn" onclick="showSection('ferrature')">🔨 Gestione Ferrature</button>
+            <button class="menu-btn" onclick="showSection('lezioni')">📖 Diario Lezioni</button>
+        </div>
+    </div>
+</div>
+
+<div id="section-ferrature" class="screen section" style="display:none;">
+    </div>
+
+<div id="section-lezioni" class="screen section" style="display:none;">
+    <h2>📖 Diario Lezioni</h2>
+    <form id="form-lezione">
+        <input type="text" id="allievo" placeholder="Nome Allievo" required>
+        <input type="date" id="data-lezione" required>
+        <select id="stato-pagamento">
+            <option value="da-pagare">❌ Da Pagare</option>
+            <option value="pagato">✅ Pagato</option>
+        </select>
+        <button type="submit">Aggiungi Lezione</button>
+    </form>
+    
+    <div id="lista-lezioni" class="mobile"></div>
+    </div>
+</body>
+</html>

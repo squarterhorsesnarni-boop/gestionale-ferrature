@@ -1,176 +1,221 @@
-// --- CONFIGURAZIONE ---
-const BIN_ID = "694d0f31d0ea881f403f5171"; 
-const API_KEY = "$2a$10$rnrc3gm93AxacslbWtqGWeXkwnGZUTHMuxP05ijc7f5gA1p5pQOja"; 
+// --- CONFIGURAZIONE DATABASE ---
+const BIN_ID = "694d0f31d0ea881f403f5171";
+const API_KEY = "$2a$10$rnrc3gm93AxacslbWtqGWeXkwnGZUTHMuxP05ijc7f5gA1p5pQOja";
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const PASSWORD = "dogsehorses26";
 
-let listaCavalli = [];
+let db = {
+    cavalli: [],
+    lezioni: []
+};
 
+// --- LOGIN ---
+function checkPassword() {
+    const inputPsw = document.getElementById("psw");
+    const loginScreen = document.getElementById("login-screen");
+    const mainApp = document.getElementById("main-app");
+
+    if (inputPsw.value === PASSWORD) {
+        loginScreen.style.display = "none";
+        mainApp.style.display = "block";
+        caricaDati();
+    } else {
+        alert("Password errata!");
+    }
+}
+
+// --- CARICAMENTO E SALVATAGGIO ---
+async function caricaDati() {
+    try {
+        const response = await fetch(`${API_URL}/latest`, {
+            headers: { "X-Master-Key": API_KEY }
+        });
+        const data = await response.json();
+        db = data.record || { cavalli: [], lezioni: [] };
+        renderAll();
+    } catch (e) { console.error("Errore download:", e); }
+}
+
+async function salvaCloud() {
+    try {
+        await fetch(API_URL, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+            body: JSON.stringify(db)
+        });
+        renderAll();
+    } catch (e) { console.error("Errore salvataggio:", e); }
+}
+
+function renderAll() {
+    renderFerrature();
+    renderLezioni();
+}
+
+// --- LOGICA MODULI ---
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("form-cavallo").addEventListener("submit", salvaCavallo);
-    caricaDati();
+    // MODULO CAVALLI (CON LOGICA SOVRASCRITTURA)
+    const formCavallo = document.getElementById("form-cavallo");
+    if (formCavallo) {
+        formCavallo.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const nomeInput = document.getElementById("nome").value.trim();
+            const dataInput = document.getElementById("ultima").value;
+            const intervalloInput = document.getElementById("intervallo").value;
+
+            // Controllo se il cavallo esiste già
+            const indexEsistente = db.cavalli.findIndex(c => c.nome === nomeInput);
+
+            if (indexEsistente !== -1) {
+                const conferma = confirm(`Il cavallo ${nomeInput} è già presente. Vuoi sovrascrivere i dati con la nuova data di ferratura?`);
+                if (conferma) {
+                    db.cavalli[indexEsistente].ultima = dataInput;
+                    db.cavalli[indexEsistente].intervallo = intervalloInput;
+                    db.cavalli[indexEsistente].pagato = false; // Reset pagamento su nuova ferratura
+                } else {
+                    return; // Annulla l'operazione
+                }
+            } else {
+                // Nuovo inserimento
+                db.cavalli.push({
+                    nome: nomeInput,
+                    ultima: dataInput,
+                    intervallo: intervalloInput,
+                    pagato: false
+                });
+            }
+
+            salvaCloud();
+            e.target.reset();
+        });
+    }
+
+    // MODULO LEZIONI
+    const formLezione = document.getElementById("form-lezione");
+    if (formLezione) {
+        formLezione.addEventListener("submit", function(e) {
+            e.preventDefault();
+            db.lezioni.push({
+                id: Date.now(),
+                allievo: document.getElementById("allievo").value,
+                data: document.getElementById("data-lezione").value,
+                ora: document.getElementById("ora-lezione").value,
+                stato: document.getElementById("stato-pagamento").value
+            });
+            salvaCloud();
+            e.target.reset();
+        });
+    }
 });
 
-function caricaDati() {
-    toggleLoading(true);
-    fetch(`${API_URL}/latest`, { headers: { "X-Master-Key": API_KEY } })
-        .then(r => r.json())
-        .then(data => {
-            listaCavalli = data.record || [];
-            render();
-        })
-        .finally(() => toggleLoading(false));
-}
+// --- RENDER FERRATURE (ORDINAMENTO PER DATA ULTIMA) ---
+function renderFerrature() {
+    const contMob = document.getElementById("lista-cavalli");
+    const contDesk = document.querySelector("#tabella-cavalli tbody");
+    if (!contMob || !contDesk) return;
 
-function salvaCloud() {
-    toggleLoading(true);
-    fetch(API_URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-        body: JSON.stringify(listaCavalli)
-    })
-    .then(() => render())
-    .finally(() => toggleLoading(false));
-}
-
-function salvaCavallo(e) {
-    e.preventDefault();
-    const nome = document.getElementById("nome").value.trim();
-    const ultima = document.getElementById("ultima").value;
-    const intervallo = parseInt(document.getElementById("intervallo").value);
-
-    const indexEsistente = listaCavalli.findIndex(c => c.nome.toLowerCase() === nome.toLowerCase());
-
-    if (indexEsistente !== -1) {
-        if (!confirm(`Il cavallo "${nome}" esiste già. Sovrascrivere i dati?`)) return;
-        listaCavalli[indexEsistente] = { nome, ultima, intervallo };
-    } else {
-        listaCavalli.push({ nome, ultima, intervallo });
-    }
-    
-    salvaCloud();
-    e.target.reset();
-}
-
-function aggiornaFerratura(index) {
-    const oggi = new Date().toISOString().split('T')[0];
-    if (confirm(`Confermi ferratura per ${listaCavalli[index].nome} in data oggi?`)) {
-        listaCavalli[index].ultima = oggi;
-        salvaCloud();
-    }
-}
-
-function eliminaCavallo(index) {
-    if (confirm("Eliminare definitivamente questo cavallo?")) {
-        listaCavalli.splice(index, 1);
-        salvaCloud();
-    }
-}
-
-function render() {
-    const containerMobile = document.getElementById("lista-cavalli");
-    const containerDesktop = document.querySelector("#tabella-cavalli tbody");
-    
-    if (!listaCavalli) return; 
-
-    const searchInput = document.getElementById("search");
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
-    
-    containerMobile.innerHTML = "";
-    containerDesktop.innerHTML = "";
-
+    contMob.innerHTML = "";
+    contDesk.innerHTML = "";
     const oggi = new Date();
-    oggi.setHours(0,0,0,0);
+    oggi.setHours(0, 0, 0, 0);
 
-    // Funzione rapida per convertire AAAA-MM-GG in GG/MM/AAAA
-    const formattaDataIT = (dataISO) => {
-        if (!dataISO) return "-";
-        const [anno, mese, giorno] = dataISO.split('-');
-        return `${giorno}/${mese}/${anno}`;
-    };
+    // ORDINAMENTO: I più vecchi (data ultima ferratura più lontana) per primi
+    const visualizzati = [...db.cavalli].sort((a, b) => new Date(a.ultima) - new Date(b.ultima));
 
-    let cavalliVisualizzati = listaCavalli.map((c, index) => {
-        const ultima = new Date(c.ultima);
-        const prossima = new Date(ultima);
-        prossima.setDate(prossima.getDate() + c.intervallo);
-        return { 
-            ...c, 
-            prossima, 
-            originaleIndex: index 
-        };
-    });
-
-    if (searchTerm) {
-        cavalliVisualizzati = cavalliVisualizzati.filter(c => 
-            c.nome.toLowerCase().includes(searchTerm)
-        );
-    }
-
-    cavalliVisualizzati.sort((a, b) => a.prossima - b.prossima);
-
-    cavalliVisualizzati.forEach((c) => {
-        const diff = Math.ceil((c.prossima - oggi) / 86400000);
+    visualizzati.forEach((c) => {
+        // Calcolo indice originale per funzioni elimina/aggiorna
+        const originalIdx = db.cavalli.findIndex(orig => orig.nome === c.nome);
         
-        // Prepariamo le date formattate per la visualizzazione
-        const ultimaFormattata = formattaDataIT(c.ultima);
-        const prossimaFormattata = formattaDataIT(c.prossima.toISOString().split('T')[0]);
+        const p = new Date(c.ultima);
+        p.setDate(p.getDate() + parseInt(c.intervallo));
+        const diff = Math.ceil((p - oggi) / 86400000);
 
-        let stato = "BUONO", classe = "buono", bg = "bg-buono";
-        if (diff < 0) { stato = "SCADUTO"; classe = "scaduto"; bg = "bg-scaduto"; }
-        else if (diff <= 7) { stato = "IN SCADENZA"; classe = "inscadenza"; bg = "bg-inscadenza"; }
+        const uIT = c.ultima.split('-').reverse().join('/');
+        const pIT = p.toISOString().split('T')[0].split('-').reverse().join('/');
 
-        // Render Mobile
-        const card = document.createElement("div");
-        card.className = `card ${classe}`;
-        card.innerHTML = `
-            <div class="nome">
-                ${c.nome} 
-                <span onclick="eliminaCavallo(${c.originaleIndex})" style="cursor:pointer; font-size: 16px;">🗑️</span>
-            </div>
-            <div style="font-size:14px; color: #666;">
-                Ultima: ${ultimaFormattata} | Prossima: ${prossimaFormattata}
-            </div>
-            <div style="margin: 12px 0; font-size: 16px;">
-                <strong>Mancano: ${diff} giorni</strong>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <span class="stato ${bg}">${stato}</span>
-                <button onclick="aggiornaFerratura(${c.originaleIndex})" 
-                        style="flex:1; background:#3498db; color:white; border:none; border-radius:6px; padding:10px; font-weight:bold; cursor:pointer;">
-                        🔨 FERRATO OGGI
-                </button>
+        const colStato = diff < 0 ? 'bg-scaduto' : (diff <= 7 ? 'bg-inscadenza' : 'bg-buono');
+        const colPagato = c.pagato ? 'bg-buono' : 'bg-inscadenza';
+
+        // MOBILE
+        contMob.innerHTML += `
+            <div class="card ${diff < 0 ? 'scaduto' : 'buono'}">
+                <div class="nome">${c.nome} <span onclick="eliminaCavallo(${originalIdx})" style="cursor:pointer">🗑️</span></div>
+                <div style="font-size:0.9em; color:#555;">Ultima: ${uIT}</div>
+                <div>Prossima: <strong>${pIT}</strong></div>
+                <div style="margin:8px 0"><strong>Mancano: ${diff} gg</strong></div>
+                <div class="azioni-grid">
+                    <button class="btn-action" style="background:#3498db; color:white" onclick="aggiornaFerratura(${originalIdx})">🔨 OGGI</button>
+                    <button class="btn-action ${colPagato}" style="color:white" onclick="togglePagamentoFerratura(${originalIdx})">${c.pagato ? 'PAGATO' : 'DA PAGARE'}</button>
+                </div>
             </div>`;
-        containerMobile.appendChild(card);
 
-        // Render Desktop
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><strong>${c.nome}</strong></td>
-            <td>${ultimaFormattata}</td>
-            <td>${c.intervallo} gg</td>
-            <td>${prossimaFormattata}</td>
-            <td><strong>${diff}</strong></td>
-            <td><span class="stato ${bg}">${stato}</span></td>
-            <td>
-                <button onclick="aggiornaFerratura(${c.originaleIndex})" 
-                        style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
-                        🔨 Oggi
-                </button>
-                <button onclick="eliminaCavallo(${c.originaleIndex})" 
-                        style="background:#f1f2f6; color:#e74c3c; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-left:5px;">
-                        🗑️
-                </button>
-            </td>`;
-        containerDesktop.appendChild(row);
+        // DESKTOP
+        contDesk.innerHTML += `
+            <tr>
+                <td><strong>${c.nome}</strong></td>
+                <td>${uIT}</td>
+                <td>${c.intervallo} gg</td>
+                <td>${pIT}</td>
+                <td>${diff}</td>
+                <td>
+                    <span class="stato ${colStato}">${diff < 0 ? 'SCADUTO' : 'OK'}</span>
+                    <span class="stato ${colPagato}" onclick="togglePagamentoFerratura(${originalIdx})" style="cursor:pointer">${c.pagato ? 'PAGATO' : 'DA PAGARE'}</span>
+                </td>
+                <td>
+                    <button class="btn-tabella" onclick="aggiornaFerratura(${originalIdx})">🔨</button>
+                    <button class="btn-tabella" onclick="eliminaCavallo(${originalIdx})">🗑️</button>
+                </td>
+            </tr>`;
     });
 }
 
-function toggleLoading(isLoading) {
-    const btn = document.getElementById("btn-salva");
-    btn.disabled = isLoading;
-    btn.textContent = isLoading ? "Attendere..." : "Salva";
-}
+// Funzioni di supporto rimanenti (aggiornaFerratura, togglePagamentoFerratura, eliminaCavallo, renderLezioni, ecc.) restano identiche alle precedenti...
+// [Sotto riporto per completezza le funzioni necessarie per il funzionamento]
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log("PWA: Service Worker Registrato"));
+function aggiornaFerratura(i) {
+    db.cavalli[i].ultima = new Date().toISOString().split('T')[0];
+    db.cavalli[i].pagato = false;
+    salvaCloud();
+}
+function togglePagamentoFerratura(i) {
+    db.cavalli[i].pagato = !db.cavalli[i].pagato;
+    salvaCloud();
+}
+function eliminaCavallo(i) {
+    if (confirm("Eliminare definitivamente?")) {
+        db.cavalli.splice(i, 1);
+        salvaCloud();
+    }
+}
+function renderLezioni() {
+    const contMob = document.getElementById("lista-lezioni");
+    const contDesk = document.querySelector("#tabella-lezioni tbody");
+    if (!contMob || !contDesk) return;
+    contMob.innerHTML = ""; contDesk.innerHTML = "";
+    const ordinate = [...db.lezioni].sort((a, b) => new Date(b.data) - new Date(a.data) || a.ora.localeCompare(b.ora));
+    ordinate.forEach(l => {
+        const isPagato = l.stato === 'pagato';
+        const colPag = isPagato ? 'bg-buono' : 'bg-inscadenza';
+        const dIT = l.data.split('-').reverse().join('/');
+        contMob.innerHTML += `<div class="card-lezione ${isPagato ? 'pagato' : 'da-pagare'}"><div style="display:flex; justify-content:space-between"><div><strong>${l.allievo}</strong><br><small>${dIT} - ${l.ora}</small></div><span class="badge ${colPag}">${l.stato}</span></div><div class="azioni-grid"><button class="btn-action ${colPag}" style="color:white" onclick="togglePagamentoLezione(${l.id})">${isPagato ? 'Annulla' : 'Paga'}</button><button class="btn-action btn-duplica" onclick="duplicaLezione(${l.id})">➕7gg</button><button class="btn-action btn-elimina" onclick="eliminaLezione(${l.id})">🗑️</button></div></div>`;
+        contDesk.innerHTML += `<tr><td><strong>${l.allievo}</strong></td><td>${dIT}</td><td>${l.ora}</td><td><span class="stato ${colPag}">${l.stato}</span></td><td><button class="btn-tabella" onclick="togglePagamentoLezione(${l.id})">🔄</button><button class="btn-tabella" onclick="duplicaLezione(${l.id})">➕</button><button class="btn-tabella" onclick="eliminaLezione(${l.id})">🗑️</button></td></tr>`;
+    });
+}
+function togglePagamentoLezione(id) {
+    const l = db.lezioni.find(x => x.id === id);
+    if (l) l.stato = l.stato === 'pagato' ? 'da-pagare' : 'pagato';
+    salvaCloud();
+}
+function duplicaLezione(id) {
+    const l = db.lezioni.find(x => x.id === id);
+    let d = new Date(l.data); d.setDate(d.getDate() + 7);
+    db.lezioni.push({...l, id: Date.now(), data: d.toISOString().split('T')[0], stato: 'da-pagare'});
+    salvaCloud();
+}
+function eliminaLezione(id) {
+    if (confirm("Eliminare?")) { db.lezioni = db.lezioni.filter(x => x.id !== id); salvaCloud(); }
+}
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
 }

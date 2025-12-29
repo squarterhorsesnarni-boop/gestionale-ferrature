@@ -1,67 +1,116 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Gestione Ferrature Scuderia</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-</head>
-<body>
+    <html lang="it">
 
-  <h1>📋 Ferrature Scuderia</h1>
+    <head>
+        <meta charset="UTF-8">
+        <title>Scuderia Pro Manager</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+        <link rel="manifest" href="manifest.json">
+    </head>
 
-  <section>
-    <h2>➕ Aggiungi o Aggiorna Cavallo</h2>
-    <form id="form-cavallo">
-      <div class="form-group">
-        <label for="nome">Nome Cavallo</label>
-        <input type="text" id="nome" placeholder="Es. Varenne" required>
-      </div>
-      
-      <div class="form-group">
-        <label for="ultima">Ultima Ferratura</label>
-        <input type="date" id="ultima" required>
-      </div>
-      
-      <div class="form-group">
-        <label for="intervallo">Intervallo (gg)</label>
-        <input type="number" id="intervallo" value="40" required>
-      </div>
+    <body onload="initApp()">
 
-      <button type="submit" id="btn-salva">Salva</button>
-    </form>
-  </section>
+        <div id="login-screen" class="screen">
+            <div class="login-card">
+                <img src="icon.png" class="logo-login">
+                <h2>Accesso Scuderia</h2>
+                <input type="password" id="psw" placeholder="Password di accesso">
+                <button onclick="checkPassword()">Entra nella Scuderia ➔</button>
+            </div>
+        </div>
 
-  <hr>
+        <div id="main-app" style="display:none;">
 
-  <div class="search-container">
-    <div class="search-group">
-        <label for="search">🔍 Cerca Cavallo</label>
-        <input type="text" id="search" placeholder="Inserisci il nome..." onkeyup="render()">
-    </div>
-</div>
+            <nav id="main-nav">
+                <button onclick="showSection('section-home')">🏠 Home</button>
+                <button onclick="showSection('section-ferrature')">🔨 Ferrature</button>
+                <button onclick="showSection('section-lezioni')">📖 Lezioni</button>
+                <button onclick="logout()" style="color: #e74c3c;">Logout</button>
+            </nav>
 
-  <div id="lista-cavalli" class="mobile"></div>
+            <div id="section-home" class="section">
+                <div class="home-hero">
+                    <img src="icon.png" class="logo-home">
+                    <h1>Gestione Scuderia</h1>
+                    <div class="menu-grid">
+                        <div class="menu-btn" onclick="showSection('section-ferrature')">
+                            <span>🔨</span>
+                            <h3>Ferrature</h3>
+                        </div>
+                        <div class="menu-btn" onclick="showSection('section-lezioni')">
+                            <span>📖</span>
+                            <h3>Lezioni</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-  <table id="tabella-cavalli" class="desktop">
-    <thead>
-      <tr>
-        <th>Cavallo</th>
-        <th>Ultima ferratura</th>
-        <th>Intervallo</th>
-        <th>Prossima</th>
-        <th>Mancanti</th>
-        <th>Stato</th>
-        <th>Azioni</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+            <div id="section-ferrature" class="section" style="display:none;">
+                <h2>🔨 Gestione Ferrature</h2>
+                <form id="form-cavallo" class="modern-form">
+                    <div class="form-grid">
+                        <input type="text" id="nome" placeholder="Nome Cavallo" required>
+                        <input type="date" id="ultima" required title="Data ultima ferratura">
+                        <input type="number" id="intervallo" placeholder="Giorni (es. 40)" required>
+                    </div>
+                    <button type="submit">Aggiungi Cavallo</button>
+                </form>
 
-  <script src="script.js"></script>
-</body>
-</html>
+                <input type="text" id="search" placeholder="🔍 Cerca cavallo..." onkeyup="render()"
+                    style="margin-bottom:20px;">
+
+                <div id="lista-cavalli" class="mobile"></div>
+
+                <table id="tabella-cavalli" class="desktop modern-table">
+                    <thead>
+                        <tr>
+                            <th>Cavallo</th>
+                            <th>Ultima</th>
+                            <th>Intervallo</th>
+                            <th>Prossima</th>
+                            <th>Mancano</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="section-lezioni" class="section" style="display:none;">
+                <h2>📖 Diario Lezioni</h2>
+                <form id="form-lezione" class="modern-form">
+                    <div class="form-grid">
+                        <input type="text" id="allievo" placeholder="Nome Allievo" required>
+                        <input type="date" id="data-lezione" required>
+                        <input type="time" id="ora-lezione" required>
+                        <select id="stato-pagamento">
+                            <option value="da-pagare">❌ Da Pagare</option>
+                            <option value="pagato">✅ Pagato</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="btn-salva-lezione">Aggiungi Lezione</button>
+                </form>
+
+                <div id="lista-lezioni" class="mobile"></div>
+
+                <table id="tabella-lezioni" class="desktop modern-table">
+                    <thead>
+                        <tr>
+                            <th>Allievo</th>
+                            <th>Data</th>
+                            <th>Ora</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+        </div>
+        <script src="script.js"></script>
+    </body>
+
+    </html>
